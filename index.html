@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Opptra BD Command Center — Strategy & Implementation Plan</title>
+<link href="https://fonts.googleapis.com/css2?family=Spectral:wght@300;600;700&family=Raleway:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --opptra-navy: #131A48;
+  --opptra-orange: #FF5800;
+  --opptra-orange-hover: #FF8C4F;
+  --opptra-yellow: #FFFCE8;
+  --opptra-grey: #5A5A5A;
+  --opptra-grey-light: #CECECE;
+  --opptra-white: #FFFFFF;
+  --opptra-black: #000000;
+  --font-heading: 'Spectral', Georgia, serif;
+  --font-body: 'Raleway', 'Segoe UI', sans-serif;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: var(--font-body); color: var(--opptra-grey); line-height: 1.7; background: #f8f9fa; }
+h1, h2, h3, h4 { font-family: var(--font-heading); color: var(--opptra-navy); }
+h1 { font-weight: 300; font-size: 2.4rem; letter-spacing: -0.04em; }
+h2 { font-weight: 700; font-size: 1.6rem; margin-bottom: 0.8rem; padding-bottom: 0.4rem; border-bottom: 3px solid var(--opptra-orange); display: inline-block; }
+h3 { font-weight: 600; font-size: 1.2rem; margin-bottom: 0.5rem; }
+
+/* Header */
+.header { background: var(--opptra-navy); color: white; padding: 2rem 3rem; display: flex; align-items: center; justify-content: space-between; }
+.header img { height: 40px; }
+.header .doc-meta { text-align: right; font-size: 0.85rem; opacity: 0.8; }
+
+/* Container */
+.container { max-width: 1100px; margin: 0 auto; padding: 2rem 3rem; }
+
+/* TOC */
+.toc { background: white; border-radius: 8px; padding: 2rem; margin-bottom: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.toc a { color: var(--opptra-navy); text-decoration: none; display: block; padding: 0.35rem 0; border-bottom: 1px solid #f0f0f0; transition: color 0.2s; }
+.toc a:hover { color: var(--opptra-orange); }
+.toc-number { color: var(--opptra-orange); font-weight: 600; margin-right: 0.5rem; display: inline-block; width: 28px; }
+
+/* Sections */
+.section { background: white; border-radius: 8px; padding: 2.5rem; margin-bottom: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); page-break-inside: avoid; }
+
+/* Callout */
+.callout { background: var(--opptra-yellow); border-left: 4px solid var(--opptra-orange); padding: 1.2rem 1.5rem; border-radius: 0 8px 8px 0; margin: 1.2rem 0; }
+.callout-navy { background: var(--opptra-navy); color: white; border-left: 4px solid var(--opptra-orange); padding: 1.2rem 1.5rem; border-radius: 0 8px 8px 0; margin: 1.2rem 0; }
+
+/* Stat cards */
+.stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 1.5rem 0; }
+.stat-card { background: var(--opptra-navy); color: white; padding: 1.2rem; border-radius: 8px; text-align: center; }
+.stat-card .number { font-family: var(--font-heading); font-size: 2rem; font-weight: 700; color: var(--opptra-orange); }
+.stat-card .label { font-size: 0.85rem; margin-top: 0.3rem; opacity: 0.85; }
+
+/* Tables */
+table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.92rem; }
+th { background: var(--opptra-navy); color: white; padding: 0.7rem 1rem; text-align: left; font-weight: 500; }
+td { padding: 0.6rem 1rem; border-bottom: 1px solid #eee; vertical-align: top; }
+tr:hover td { background: #fafafa; }
+tr:nth-child(even) td { background: #f9f9fb; }
+
+/* Tags / pills */
+.pill { display: inline-block; padding: 0.15rem 0.6rem; border-radius: 99px; font-size: 0.75rem; font-weight: 600; }
+.pill-red { background: #fee; color: #c00; }
+.pill-orange { background: #fff3e0; color: #e65100; }
+.pill-green { background: #e8f5e9; color: #2e7d32; }
+.pill-blue { background: #e3f2fd; color: #1565c0; }
+.pill-navy { background: var(--opptra-navy); color: white; }
+
+/* Pipeline */
+.pipeline { display: flex; gap: 0; margin: 1.5rem 0; flex-wrap: wrap; }
+.pipeline-stage { flex: 1; min-width: 100px; padding: 0.8rem 0.6rem; text-align: center; font-size: 0.8rem; font-weight: 600; color: white; position: relative; clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%, 12px 50%); }
+.pipeline-stage:first-child { clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%); }
+
+/* Architecture diagram */
+.arch-diagram { display: flex; flex-direction: column; gap: 1rem; margin: 1.5rem 0; }
+.arch-layer { display: flex; gap: 1rem; align-items: stretch; justify-content: center; flex-wrap: wrap; }
+.arch-box { padding: 1rem; border-radius: 8px; text-align: center; font-size: 0.85rem; min-width: 140px; flex: 1; max-width: 200px; }
+.arch-arrow { text-align: center; font-size: 1.5rem; color: var(--opptra-orange); }
+.arch-label { font-weight: 700; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.5rem; color: var(--opptra-navy); }
+
+/* Maturity */
+.maturity-bar { display: flex; height: 32px; border-radius: 6px; overflow: hidden; margin: 0.5rem 0; }
+.maturity-fill { display: flex; align-items: center; justify-content: center; color: white; font-size: 0.75rem; font-weight: 600; }
+
+/* Scoring matrix */
+.score { display: inline-block; width: 28px; height: 28px; line-height: 28px; text-align: center; border-radius: 50%; font-size: 0.75rem; font-weight: 700; color: white; }
+.score-1 { background: #e53935; }
+.score-2 { background: #f4511e; }
+.score-3 { background: #fb8c00; }
+.score-4 { background: #7cb342; }
+.score-5 { background: #2e7d32; }
+
+/* Timeline */
+.timeline { position: relative; padding-left: 2rem; margin: 1.5rem 0; }
+.timeline::before { content: ''; position: absolute; left: 8px; top: 0; bottom: 0; width: 3px; background: var(--opptra-orange); border-radius: 3px; }
+.timeline-item { position: relative; margin-bottom: 1.5rem; padding-left: 1.5rem; }
+.timeline-item::before { content: ''; position: absolute; left: -1.65rem; top: 0.4rem; width: 14px; height: 14px; border-radius: 50%; background: var(--opptra-orange); border: 3px solid white; box-shadow: 0 0 0 2px var(--opptra-orange); }
+.timeline-day { font-family: var(--font-heading); font-weight: 700; color: var(--opptra-navy); font-size: 1rem; }
+
+/* Risk matrix */
+.risk-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+.risk-card { border: 1px solid #eee; border-radius: 8px; padding: 1rem; border-left: 4px solid; }
+
+/* Before/After */
+.compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; margin: 1.5rem 0; }
+.compare-col { padding: 1.5rem; }
+.compare-before { background: #fce4ec; border-radius: 8px 0 0 8px; }
+.compare-after { background: #e8f5e9; border-radius: 0 8px 8px 0; }
+.compare-col h3 { margin-bottom: 1rem; }
+.compare-item { padding: 0.5rem 0; border-bottom: 1px solid rgba(0,0,0,0.08); font-size: 0.9rem; }
+
+/* Details */
+details { margin: 0.5rem 0; }
+summary { cursor: pointer; font-weight: 600; color: var(--opptra-navy); padding: 0.5rem 0; }
+summary:hover { color: var(--opptra-orange); }
+
+/* Print */
+@media print {
+  body { background: white; }
+  .section { box-shadow: none; border: 1px solid #eee; page-break-inside: avoid; }
+  .header { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .stat-card, th, .pipeline-stage, .score { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+}
+@page { margin: 1.5cm; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div>
+    <img src="https://cdn.prod.website-files.com/67a44396c211269f785f9dfe/67a4a8650573be9ae072ae9e_Opptra-logo.svg" alt="Opptra">
+    <div style="margin-top:0.5rem; font-family: var(--font-heading); font-size:1.4rem; font-weight:300; letter-spacing:-0.02em;">BD Command Center</div>
+    <div style="font-size:0.9rem; opacity:0.7;">Strategy & Implementation Plan</div>
+  </div>
+  <div class="doc-meta">
+    <div><strong>Classification:</strong> Internal — Confidential</div>
+    <div><strong>Version:</strong> 1.0</div>
+    <div><strong>Date:</strong> April 17, 2026</div>
+    <div><strong>Prepared for:</strong> Opptra Leadership</div>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- TABLE OF CONTENTS -->
+<div class="toc">
+  <h2 style="border-bottom-color: var(--opptra-navy);">Table of Contents</h2>
+  <div style="columns: 2; column-gap: 2rem; margin-top: 1rem;">
+    <a href="#exec"><span class="toc-number">01</span> Executive Summary</a>
+    <a href="#gap"><span class="toc-number">02</span> Current State & Gap Analysis</a>
+    <a href="#solution"><span class="toc-number">03</span> Proposed Solution</a>
+    <a href="#stages"><span class="toc-number">04</span> Stage Definitions & Ownership</a>
+    <a href="#automation"><span class="toc-number">05</span> Automation Architecture</a>
+    <a href="#roadmap"><span class="toc-number">06</span> 1-Week Implementation Roadmap</a>
+    <a href="#impact"><span class="toc-number">07</span> Business Impact Analysis</a>
+    <a href="#alternatives"><span class="toc-number">08</span> Alternative Comparison</a>
+    <a href="#risks"><span class="toc-number">09</span> Risks & Mitigation</a>
+    <a href="#next"><span class="toc-number">10</span> Next Steps & Governance</a>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECTION 1: EXECUTIVE SUMMARY -->
+<!-- ============================================================ -->
+<div class="section" id="exec">
+  <h2>01 &nbsp; Executive Summary</h2>
+  <p style="margin:1rem 0; font-size:1.05rem;">Opptra's BD operation is at an inflection point. A 3-person team is managing 100+ active leads across disconnected tools — Notion, Gmail, Slack, and legacy Google Sheets — with no unified pipeline, no stage-level SLAs, and no automated hand-offs. The result: leads fall through cracks, verbal commitments go untracked, ownership is ambiguous, and rejected deals disappear from view entirely.</p>
+
+  <div class="stat-row">
+    <div class="stat-card">
+      <div class="number">3</div>
+      <div class="label">BD team members</div>
+    </div>
+    <div class="stat-card">
+      <div class="number">100+</div>
+      <div class="label">Active leads in pipeline</div>
+    </div>
+    <div class="stat-card">
+      <div class="number">33+</div>
+      <div class="label">Leads per person</div>
+    </div>
+    <div class="stat-card">
+      <div class="number">0</div>
+      <div class="label">Automated workflows today</div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>The Proposal:</strong> Build the <strong>Opptra BD Command Center</strong> — a Notion-native CRM with Claude AI as the orchestration brain, integrated with Gmail and Slack. Standardized stages, enforced SLAs, clear ownership, and AI-powered automation — deployed in a 1-week sprint.
+  </div>
+
+  <p style="margin-top:1rem;"><strong>Expected outcomes:</strong> near-zero lead leakage, 70% reduction in manual data entry, full stage-transition visibility, automated stakeholder notifications, and data-driven pipeline forecasting — without adding headcount or switching to enterprise CRM software.</p>
+
+  <div class="callout-navy">
+    <strong>Why this approach over Salesforce or HubSpot?</strong> &nbsp;For a 3-person team with an existing Notion ecosystem, a Notion + Claude solution deploys in days (not months), costs a fraction, and provides AI-native automation that legacy CRMs require expensive add-ons to match. Details in <a href="#alternatives" style="color:var(--opptra-orange);">Section 08</a>.
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECTION 2: GAP ANALYSIS -->
+<!-- ============================================================ -->
+<div class="section" id="gap">
+  <h2>02 &nbsp; Current State & Gap Analysis</h2>
+
+  <h3 style="margin-top:1rem;">2.1 &nbsp; Gap Matrix</h3>
+  <table>
+    <thead>
+      <tr><th>Area</th><th>Current State</th><th>Gap</th><th>Impact</th><th>Priority</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Stage Definitions</strong></td>
+        <td>Informal, inconsistent across BD & Brand teams</td>
+        <td>No standardized entry/exit criteria per stage</td>
+        <td>Deals mis-classified; pipeline metrics unreliable</td>
+        <td><span class="pill pill-red">Critical</span></td>
+      </tr>
+      <tr>
+        <td><strong>Communication Capture</strong></td>
+        <td>Verbal commitments in meetings; scattered across email & Slack</td>
+        <td>No system of record for commitments</td>
+        <td>Brand team blindsided by untracked promises; trust erosion</td>
+        <td><span class="pill pill-red">Critical</span></td>
+      </tr>
+      <tr>
+        <td><strong>Time & SLA Tracking</strong></td>
+        <td>No duration tracking at any stage</td>
+        <td>Cannot identify bottlenecks or stale deals</td>
+        <td>Deals sit in stages indefinitely; opportunity cost mounts</td>
+        <td><span class="pill pill-red">Critical</span></td>
+      </tr>
+      <tr>
+        <td><strong>Ownership Model</strong></td>
+        <td>Implicit ownership; changes not formalized</td>
+        <td>No RACI; no ownership transfer protocol</td>
+        <td>Accountability gaps; work duplication; dropped handoffs</td>
+        <td><span class="pill pill-red">Critical</span></td>
+      </tr>
+      <tr>
+        <td><strong>Rejected/On-Hold Tracking</strong></td>
+        <td>Not tracked — deals simply disappear</td>
+        <td>No reason codes, no revival pipeline</td>
+        <td>Incomplete pipeline picture; missed revival opportunities</td>
+        <td><span class="pill pill-orange">High</span></td>
+      </tr>
+      <tr>
+        <td><strong>Cross-Channel Sync</strong></td>
+        <td>Gmail, Slack, Notion used in silos</td>
+        <td>No auto-sync between communication and database</td>
+        <td>5+ hrs/week on manual data entry; stale records</td>
+        <td><span class="pill pill-orange">High</span></td>
+      </tr>
+      <tr>
+        <td><strong>Revenue Forecasting</strong></td>
+        <td>Ad hoc estimates in spreadsheets</td>
+        <td>No systematic revenue potential calculation</td>
+        <td>Leadership lacks reliable pipeline revenue view</td>
+        <td><span class="pill pill-orange">High</span></td>
+      </tr>
+      <tr>
+        <td><strong>Red Flag Detection</strong></td>
+        <td>Manual judgment only</td>
+        <td>No systematic screening against rejection criteria</td>
+        <td>Team wastes cycles on unviable deals</td>
+        <td><span class="pill pill-blue">Medium</span></td>
+      </tr>
+      <tr>
+        <td><strong>Work Deduplication</strong></td>
+        <td>Analyses/decks stored locally or not at all</td>
+        <td>No centralized knowledge per deal</td>
+        <td>Rework when team members rotate; institutional memory loss</td>
+        <td><span class="pill pill-blue">Medium</span></td>
+      </tr>
+      <tr>
+        <td><strong>Governance & Controls</strong></td>
+        <td>No formal CRM custodian or approval workflows</td>
+        <td>Anyone can change anything; no audit trail</td>
+        <td>Data integrity risk; no compliance history</td>
+        <td><span class="pill pill-orange">High</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 style="margin-top:2rem;">2.2 &nbsp; Operational Maturity Assessment</h3>
+  <p style="margin-bottom:1rem;">Scoring Opptra's BD operations across five dimensions (1 = Ad Hoc, 5 = Optimized):</p>
+
+  <div style="display:grid; gap:0.8rem;">
+    <div>
+      <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:0.2rem;"><span><strong>Process Standardization</strong></span><span>Current: 1.5 → Target: 4.0</span></div>
+      <div class="maturity-bar" style="background:#eee;">
+        <div class="maturity-fill" style="width:30%; background:var(--opptra-orange);">1.5</div>
+        <div class="maturity-fill" style="width:50%; background:var(--opptra-navy); opacity:0.3;">→ 4.0</div>
+      </div>
+    </div>
+    <div>
+      <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:0.2rem;"><span><strong>Data & Tool Integration</strong></span><span>Current: 1.0 → Target: 4.5</span></div>
+      <div class="maturity-bar" style="background:#eee;">
+        <div class="maturity-fill" style="width:20%; background:var(--opptra-orange);">1.0</div>
+        <div class="maturity-fill" style="width:70%; background:var(--opptra-navy); opacity:0.3;">→ 4.5</div>
+      </div>
+    </div>
+    <div>
+      <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:0.2rem;"><span><strong>Ownership & Accountability</strong></span><span>Current: 1.5 → Target: 4.0</span></div>
+      <div class="maturity-bar" style="background:#eee;">
+        <div class="maturity-fill" style="width:30%; background:var(--opptra-orange);">1.5</div>
+        <div class="maturity-fill" style="width:50%; background:var(--opptra-navy); opacity:0.3;">→ 4.0</div>
+      </div>
+    </div>
+    <div>
+      <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:0.2rem;"><span><strong>Automation & AI</strong></span><span>Current: 0.5 → Target: 4.0</span></div>
+      <div class="maturity-bar" style="background:#eee;">
+        <div class="maturity-fill" style="width:10%; background:var(--opptra-orange);">0.5</div>
+        <div class="maturity-fill" style="width:70%; background:var(--opptra-navy); opacity:0.3;">→ 4.0</div>
+      </div>
+    </div>
+    <div>
+      <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:0.2rem;"><span><strong>Reporting & Insights</strong></span><span>Current: 1.0 → Target: 3.5</span></div>
+      <div class="maturity-bar" style="background:#eee;">
+        <div class="maturity-fill" style="width:20%; background:var(--opptra-orange);">1.0</div>
+        <div class="maturity-fill" style="width:50%; background:var(--opptra-navy); opacity:0.3;">→ 3.5</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout" style="margin-top:1.5rem;">
+    <strong>Key Insight:</strong> Opptra's BD operations sit at <strong>Level 1 (Ad Hoc)</strong> across nearly every dimension. The good news: the gap is so wide that even basic systematization delivers outsized returns. The proposed solution targets Level 4 (Managed/Automated) within one week.
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECTION 3: PROPOSED SOLUTION -->
+<!-- ============================================================ -->
+<div class="section" id="solution">
+  <h2>03 &nbsp; Proposed Solution: Opptra BD Command Center</h2>
+
+  <p style="margin:1rem 0;">The BD Command Center is not a new tool purchase — it is an intelligent orchestration layer built on top of tools your team already uses. Notion becomes the single source of truth. Claude AI becomes the always-on operations manager. Gmail and Slack become automatic input feeds.</p>
+
+  <h3 style="margin-top:1.5rem;">3.1 &nbsp; System Architecture</h3>
+
+  <div class="arch-diagram">
+    <div class="arch-label" style="text-align:center;">📥 Input Layer — Where information enters</div>
+    <div class="arch-layer">
+      <div class="arch-box" style="background:#e3f2fd; border:2px solid #1565c0;">
+        <strong>📧 Gmail</strong><br>
+        <span style="font-size:0.8rem;">Brand emails, inquiries, follow-ups, proposals</span>
+      </div>
+      <div class="arch-box" style="background:#f3e5f5; border:2px solid #7b1fa2;">
+        <strong>💬 Slack</strong><br>
+        <span style="font-size:0.8rem;">Internal discussions, commitments, deal updates</span>
+      </div>
+      <div class="arch-box" style="background:#e8f5e9; border:2px solid #2e7d32;">
+        <strong>✋ Manual Entry</strong><br>
+        <span style="font-size:0.8rem;">Calls, meetings, events, offline intel</span>
+      </div>
+    </div>
+
+    <div class="arch-arrow">▼ &nbsp; ▼ &nbsp; ▼</div>
+
+    <div class="arch-label" style="text-align:center;">🧠 Processing Layer — Claude AI Orchestrator</div>
+    <div class="arch-layer">
+      <div class="arch-box" style="background:var(--opptra-navy); color:white; border:2px solid var(--opptra-orange); max-width:600px; flex:3;">
+        <strong style="color:var(--opptra-orange);">Claude AI Engine</strong><br>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; margin-top:0.5rem; font-size:0.8rem; text-align:left;">
+          <span>⚡ Lead Detection & Parsing</span>
+          <span>⚡ Commitment Extraction</span>
+          <span>⚡ SLA Monitoring</span>
+          <span>⚡ Revenue Estimation</span>
+          <span>⚡ Red Flag Detection</span>
+          <span>⚡ Duplicate Prevention</span>
+          <span>⚡ Stakeholder Notifications</span>
+          <span>⚡ Stage Transition Logic</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arch-arrow">▼ &nbsp; ▼ &nbsp; ▼</div>
+
+    <div class="arch-label" style="text-align:center;">💾 Data Layer — Notion (Single Source of Truth)</div>
+    <div class="arch-layer">
+      <div class="arch-box" style="background:var(--opptra-yellow); border:2px solid var(--opptra-navy);">
+        <strong>🎯 Deals DB</strong><br>
+        <span style="font-size:0.8rem;">Pipeline, stages, owners, SLAs</span>
+      </div>
+      <div class="arch-box" style="background:var(--opptra-yellow); border:2px solid var(--opptra-navy);">
+        <strong>🏢 Brands DB</strong><br>
+        <span style="font-size:0.8rem;">Brand profiles, analyses, contacts</span>
+      </div>
+      <div class="arch-box" style="background:var(--opptra-yellow); border:2px solid var(--opptra-navy);">
+        <strong>📋 Activity Log</strong><br>
+        <span style="font-size:0.8rem;">Every action, timestamped, attributed</span>
+      </div>
+      <div class="arch-box" style="background:var(--opptra-yellow); border:2px solid var(--opptra-navy);">
+        <strong>📁 Documents</strong><br>
+        <span style="font-size:0.8rem;">Decks, analyses, proposals</span>
+      </div>
+    </div>
+
+    <div class="arch-arrow">▼ &nbsp; ▼ &nbsp; ▼</div>
+
+    <div class="arch-label" style="text-align:center;">📤 Output Layer — Stakeholder Visibility</div>
+    <div class="arch-layer">
+      <div class="arch-box" style="background:#fff3e0; border:2px solid var(--opptra-orange);">
+        <strong>🔔 Alerts</strong><br>
+        <span style="font-size:0.8rem;">Slack/email notifications on key events</span>
+      </div>
+      <div class="arch-box" style="background:#fff3e0; border:2px solid var(--opptra-orange);">
+        <strong>📊 Dashboards</strong><br>
+        <span style="font-size:0.8rem;">Notion views: pipeline, aging, forecast</span>
+      </div>
+      <div class="arch-box" style="background:#fff3e0; border:2px solid var(--opptra-orange);">
+        <strong>📈 Reports</strong><br>
+        <span style="font-size:0.8rem;">Weekly pipeline digest, SLA compliance</span>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:2rem;">3.2 &nbsp; Four Pillars of the Solution</h3>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin:1rem 0;">
+    <div style="padding:1.2rem; border-radius:8px; border:2px solid var(--opptra-navy);">
+      <h4 style="color:var(--opptra-orange);">① Unified Stage Pipeline</h4>
+      <p style="font-size:0.9rem; margin-top:0.5rem;">7 clearly defined stages with entry/exit criteria, maximum duration SLAs, and automated transitions. Plus dedicated Rejected and On-Hold tracks with reason codes and revival workflows.</p>
+    </div>
+    <div style="padding:1.2rem; border-radius:8px; border:2px solid var(--opptra-navy);">
+      <h4 style="color:var(--opptra-orange);">② Smart Ownership Matrix</h4>
+      <p style="font-size:0.9rem; margin-top:0.5rem;">Every deal has exactly one primary owner at all times. Ownership auto-transfers at defined stage transitions. Support tags for central team dependencies. BD team retains governance control.</p>
+    </div>
+    <div style="padding:1.2rem; border-radius:8px; border:2px solid var(--opptra-navy);">
+      <h4 style="color:var(--opptra-orange);">③ AI Automation Layer</h4>
+      <p style="font-size:0.9rem; margin-top:0.5rem;">Claude monitors Gmail and Slack in real-time, auto-creates leads, captures commitments, enforces SLAs, calculates revenue potential, flags red-flag deals, and broadcasts updates to stakeholders.</p>
+    </div>
+    <div style="padding:1.2rem; border-radius:8px; border:2px solid var(--opptra-navy);">
+      <h4 style="color:var(--opptra-orange);">④ Governance & Escalation</h4>
+      <p style="font-size:0.9rem; margin-top:0.5rem;">BD team as CRM custodians with admin privileges. Stage transitions require owner confirmation. Full audit trail on every change. Automated escalation when SLAs breach or red flags trigger.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECTION 4: STAGE DEFINITIONS -->
+<!-- ============================================================ -->
+<div class="section" id="stages">
+  <h2>04 &nbsp; Stage Definitions & Ownership Model</h2>
+
+  <h3>4.1 &nbsp; Pipeline Visualization</h3>
+  <div class="pipeline">
+    <div class="pipeline-stage" style="background:#4a148c;">Connect</div>
+    <div class="pipeline-stage" style="background:#1a237e;">Lead</div>
+    <div class="pipeline-stage" style="background:#0d47a1;">MQL</div>
+    <div class="pipeline-stage" style="background:#006064;">SQL</div>
+    <div class="pipeline-stage" style="background:#1b5e20;">Opportunity</div>
+    <div class="pipeline-stage" style="background:#e65100;">Signed</div>
+    <div class="pipeline-stage" style="background:var(--opptra-orange);">Launch</div>
+  </div>
+  <div style="display:flex; gap:0.5rem; margin-top:0.5rem;">
+    <div style="padding:0.3rem 0.8rem; background:#9e9e9e; color:white; border-radius:4px; font-size:0.8rem;">⏸ On Hold</div>
+    <div style="padding:0.3rem 0.8rem; background:#c62828; color:white; border-radius:4px; font-size:0.8rem;">✕ Rejected</div>
+  </div>
+
+  <h3 style="margin-top:2rem;">4.2 &nbsp; Stage Detail Cards</h3>
+
+  <!-- CONNECT -->
+  <details open style="margin:1rem 0; border:1px solid #eee; border-radius:8px; overflow:hidden;">
+    <summary style="background:var(--opptra-navy); color:white; padding:0.8rem 1.2rem; font-family:var(--font-heading);">
+      Stage 1: Connect &nbsp;<span class="pill" style="background:#4a148c; color:white;">Initial Touch</span>
+    </summary>
+    <div style="padding:1.2rem;">
+      <p><strong>Definition:</strong> First contact has been made with a brand — through cold outreach, inbound inquiry, event meeting, or referral. No qualification has happened yet.</p>
+      <table>
+        <tr><th style="width:180px;">Entry Criteria</th><td>Brand identified + initial contact attempted (email sent, LinkedIn message, event conversation)</td></tr>
+        <tr><th>Exit Criteria</th><td>Brand responds positively + initial call/meeting scheduled OR brand explicitly declines</td></tr>
+        <tr><th>Max Duration (SLA)</th><td><strong>14 days</strong> — if no response after 3 follow-ups, auto-move to Rejected (reason: No Response)</td></tr>
+        <tr><th>Primary Owner</th><td>BD Team Member (initiator)</td></tr>
+        <tr><th>Support Tags</th><td>None required</td></tr>
+        <tr><th>Auto-Actions</th><td>① Auto-create deal record from Gmail outreach &nbsp; ② Reminder at Day 5 and Day 10 if no response &nbsp; ③ Auto-reject at Day 14 with no response</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <!-- LEAD -->
+  <details style="margin:1rem 0; border:1px solid #eee; border-radius:8px; overflow:hidden;">
+    <summary style="background:var(--opptra-navy); color:white; padding:0.8rem 1.2rem; font-family:var(--font-heading);">
+      Stage 2: Lead &nbsp;<span class="pill" style="background:#1a237e; color:white;">Engaged</span>
+    </summary>
+    <div style="padding:1.2rem;">
+      <p><strong>Definition:</strong> Brand has responded positively and initial dialogue is underway. Exploring mutual interest but no formal qualification yet.</p>
+      <table>
+        <tr><th style="width:180px;">Entry Criteria</th><td>Brand responded positively + initial meeting/call completed or firmly scheduled</td></tr>
+        <tr><th>Exit Criteria</th><td>Sufficient information gathered to assess marketing qualification (brand category fit, market interest, basic commercials discussed)</td></tr>
+        <tr><th>Max Duration (SLA)</th><td><strong>21 days</strong> — auto-escalation to BD lead at Day 15; auto-move to On Hold at Day 21</td></tr>
+        <tr><th>Primary Owner</th><td>BD Team Member</td></tr>
+        <tr><th>Support Tags</th><td>Central team (research support if needed)</td></tr>
+        <tr><th>Auto-Actions</th><td>① Claude parses initial call notes for key data points &nbsp; ② Auto-populate brand profile from web research &nbsp; ③ Flag if brand already exists in database (duplicate check)</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <!-- MQL -->
+  <details style="margin:1rem 0; border:1px solid #eee; border-radius:8px; overflow:hidden;">
+    <summary style="background:var(--opptra-navy); color:white; padding:0.8rem 1.2rem; font-family:var(--font-heading);">
+      Stage 3: MQL (Marketing Qualified Lead) &nbsp;<span class="pill" style="background:#0d47a1; color:white;">Qualified — Market Fit</span>
+    </summary>
+    <div style="padding:1.2rem;">
+      <p><strong>Definition:</strong> Brand has been assessed and confirmed to have market fit — the category, positioning, and market opportunity align with Opptra's portfolio strategy.</p>
+      <table>
+        <tr><th style="width:180px;">Entry Criteria</th><td>Brand category fit confirmed + market demand validated + no existing distributor conflict identified + basic brand profile complete</td></tr>
+        <tr><th>Exit Criteria</th><td>Commercial terms discussion initiated + brand decision-maker engaged + revenue potential estimated</td></tr>
+        <tr><th>Max Duration (SLA)</th><td><strong>14 days</strong> — auto-reminder at Day 7; escalation at Day 14</td></tr>
+        <tr><th>Primary Owner</th><td>BD Team Member</td></tr>
+        <tr><th>Support Tags</th><td>Brand Team (category assessment), Central Team (market data)</td></tr>
+        <tr><th>Auto-Actions</th><td>① Claude estimates revenue potential range &nbsp; ② Red flag scan (distributor conflicts, financials, terms) &nbsp; ③ Notify Brand Team of new qualified lead</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <!-- SQL -->
+  <details style="margin:1rem 0; border:1px solid #eee; border-radius:8px; overflow:hidden;">
+    <summary style="background:var(--opptra-navy); color:white; padding:0.8rem 1.2rem; font-family:var(--font-heading);">
+      Stage 4: SQL (Sales Qualified Lead) &nbsp;<span class="pill" style="background:#006064; color:white;">Qualified — Commercial Fit</span>
+    </summary>
+    <div style="padding:1.2rem;">
+      <p><strong>Definition:</strong> Commercial viability confirmed. Brand's terms, margins, and business model are acceptable. Both parties have expressed intent to explore a formal partnership.</p>
+      <table>
+        <tr><th style="width:180px;">Entry Criteria</th><td>Commercial terms discussed + margins acceptable + brand decision-maker engaged + revenue potential documented + no critical red flags</td></tr>
+        <tr><th>Exit Criteria</th><td>Formal proposal/LOI shared + internal CEO clearance obtained + brand expresses intent to sign</td></tr>
+        <tr><th>Max Duration (SLA)</th><td><strong>21 days</strong> — auto-reminder at Day 10; escalation at Day 21</td></tr>
+        <tr><th>Primary Owner</th><td>BD Lead (senior BD)</td></tr>
+        <tr><th>Support Tags</th><td>Brand Team (proposal prep), Central Team (legal/finance review)</td></tr>
+        <tr><th>Auto-Actions</th><td>① Trigger internal pitch deck preparation &nbsp; ② Request CEO clearance if deal > threshold &nbsp; ③ Update revenue forecast with confidence score</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <!-- OPPORTUNITY -->
+  <details style="margin:1rem 0; border:1px solid #eee; border-radius:8px; overflow:hidden;">
+    <summary style="background:var(--opptra-navy); color:white; padding:0.8rem 1.2rem; font-family:var(--font-heading);">
+      Stage 5: Opportunity &nbsp;<span class="pill" style="background:#1b5e20; color:white;">Negotiating</span>
+    </summary>
+    <div style="padding:1.2rem;">
+      <p><strong>Definition:</strong> Active negotiation phase. Proposal has been shared, terms are being finalized, and both sides are working toward a signed agreement.</p>
+      <table>
+        <tr><th style="width:180px;">Entry Criteria</th><td>Formal proposal/LOI shared with brand + internal clearance obtained + brand confirms negotiation intent</td></tr>
+        <tr><th>Exit Criteria</th><td>Agreement signed by both parties OR deal rejected/put on hold</td></tr>
+        <tr><th>Max Duration (SLA)</th><td><strong>30 days</strong> — weekly check-in required; escalation at Day 30 to leadership</td></tr>
+        <tr><th>Primary Owner</th><td>BD Lead (with Brand Team co-owner)</td></tr>
+        <tr><th>Support Tags</th><td>Legal, Finance, Brand Team (onboarding prep)</td></tr>
+        <tr><th>Auto-Actions</th><td>① Weekly negotiation status prompt to deal owner &nbsp; ② Track all email exchanges on terms &nbsp; ③ Alert leadership if deal value > threshold</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <!-- SIGNED -->
+  <details style="margin:1rem 0; border:1px solid #eee; border-radius:8px; overflow:hidden;">
+    <summary style="background:var(--opptra-navy); color:white; padding:0.8rem 1.2rem; font-family:var(--font-heading);">
+      Stage 6: Signed &nbsp;<span class="pill" style="background:#e65100; color:white;">Contract Executed</span>
+    </summary>
+    <div style="padding:1.2rem;">
+      <p><strong>Definition:</strong> Agreement is signed. Deal transitions from BD to Brand/Operations team for launch execution.</p>
+      <table>
+        <tr><th style="width:180px;">Entry Criteria</th><td>Agreement signed by both parties + contract uploaded to deal record</td></tr>
+        <tr><th>Exit Criteria</th><td>Launch plan created + brand onboarding initiated + first order placed or go-live date confirmed</td></tr>
+        <tr><th>Max Duration (SLA)</th><td><strong>14 days</strong> to initiate launch prep</td></tr>
+        <tr><th>Primary Owner</th><td><strong>Brand Team Lead</strong> (ownership transfers from BD)</td></tr>
+        <tr><th>Support Tags</th><td>BD (relationship continuity), Operations, Marketing</td></tr>
+        <tr><th>Auto-Actions</th><td>① Auto-notify Brand Team of ownership transfer &nbsp; ② Create launch checklist in Notion &nbsp; ③ Move revenue from pipeline to committed forecast</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <!-- LAUNCH -->
+  <details style="margin:1rem 0; border:1px solid #eee; border-radius:8px; overflow:hidden;">
+    <summary style="background:var(--opptra-navy); color:white; padding:0.8rem 1.2rem; font-family:var(--font-heading);">
+      Stage 7: Launch &nbsp;<span class="pill" style="background:var(--opptra-orange); color:white;">Live</span>
+    </summary>
+    <div style="padding:1.2rem;">
+      <p><strong>Definition:</strong> Brand is live — products are listed, first orders are placed, or go-to-market activities have begun. The deal is successfully closed.</p>
+      <table>
+        <tr><th style="width:180px;">Entry Criteria</th><td>Launch plan executed + first order/listing confirmed + brand operational in market</td></tr>
+        <tr><th>Exit Criteria</th><td>N/A — terminal stage. Deal transitions to ongoing account management.</td></tr>
+        <tr><th>Max Duration (SLA)</th><td>N/A (monitored via account management cadence)</td></tr>
+        <tr><th>Primary Owner</th><td>Brand Team Lead</td></tr>
+        <tr><th>Support Tags</th><td>Operations, Marketing, BD (for relationship)</td></tr>
+        <tr><th>Auto-Actions</th><td>① Celebrate! Slack announcement to team &nbsp; ② Update pipeline metrics &nbsp; ③ Archive deal from active pipeline view</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <!-- REJECTED / ON HOLD -->
+  <details style="margin:1rem 0; border:1px solid #eee; border-radius:8px; overflow:hidden;">
+    <summary style="background:#c62828; color:white; padding:0.8rem 1.2rem; font-family:var(--font-heading);">
+      Special: Rejected & On Hold
+    </summary>
+    <div style="padding:1.2rem;">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem;">
+        <div>
+          <h4 style="color:#c62828;">✕ Rejected</h4>
+          <p style="font-size:0.9rem; margin:0.5rem 0;"><strong>Reason codes:</strong></p>
+          <ul style="font-size:0.85rem; padding-left:1.2rem;">
+            <li>No Response (auto after SLA breach)</li>
+            <li>Brand Declined</li>
+            <li>Distributor Conflict</li>
+            <li>Unacceptable Terms/Margins</li>
+            <li>Market Fit Mismatch</li>
+            <li>Financial Red Flags</li>
+            <li>Internal Decision (leadership veto)</li>
+          </ul>
+          <p style="font-size:0.85rem; margin-top:0.5rem;"><strong>Revival:</strong> Rejected deals are reviewable quarterly. Claude auto-resurfaces deals if market conditions change.</p>
+        </div>
+        <div>
+          <h4 style="color:#9e9e9e;">⏸ On Hold</h4>
+          <p style="font-size:0.9rem; margin:0.5rem 0;"><strong>Reason codes:</strong></p>
+          <ul style="font-size:0.85rem; padding-left:1.2rem;">
+            <li>Brand Timing (not ready yet)</li>
+            <li>Internal Capacity (Opptra bandwidth)</li>
+            <li>Pending Legal/Regulatory</li>
+            <li>Market Conditions</li>
+            <li>Budget Cycle Mismatch</li>
+          </ul>
+          <p style="font-size:0.85rem; margin-top:0.5rem;"><strong>Revival:</strong> Mandatory revival date set. Claude auto-reminds deal owner to re-engage on that date.</p>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <h3 style="margin-top:2rem;">4.3 &nbsp; RACI Ownership Matrix</h3>
+  <table>
+    <thead>
+      <tr><th>Stage</th><th>BD Team</th><th>Brand Team</th><th>Central Team</th><th>Leadership</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Connect</strong></td><td><span class="pill pill-navy">R/A</span></td><td>—</td><td>—</td><td>—</td></tr>
+      <tr><td><strong>Lead</strong></td><td><span class="pill pill-navy">R/A</span></td><td>—</td><td><span class="pill pill-blue">C</span></td><td>—</td></tr>
+      <tr><td><strong>MQL</strong></td><td><span class="pill pill-navy">R/A</span></td><td><span class="pill pill-blue">C</span></td><td><span class="pill pill-blue">C</span></td><td>—</td></tr>
+      <tr><td><strong>SQL</strong></td><td><span class="pill pill-navy">R/A</span></td><td><span class="pill pill-green">I</span></td><td><span class="pill pill-blue">C</span></td><td><span class="pill pill-green">I</span></td></tr>
+      <tr><td><strong>Opportunity</strong></td><td><span class="pill pill-navy">R/A</span></td><td><span class="pill pill-blue">C</span></td><td><span class="pill pill-blue">C</span></td><td><span class="pill pill-green">I</span></td></tr>
+      <tr><td><strong>Signed</strong></td><td><span class="pill pill-blue">C</span></td><td><span class="pill pill-navy">R/A</span></td><td><span class="pill pill-blue">C</span></td><td><span class="pill pill-green">I</span></td></tr>
+      <tr><td><strong>Launch</strong></td><td><span class="pill pill-green">I</span></td><td><span class="pill pill-navy">R/A</span></td><td><span class="pill pill-blue">C</span></td><td><span class="pill pill-green">I</span></td></tr>
+    </tbody>
+  </table>
+  <p style="font-size:0.8rem; margin-top:0.5rem; color:#999;"><strong>R</strong> = Responsible &nbsp; <strong>A</strong> = Accountable &nbsp; <strong>C</strong> = Consulted &nbsp; <strong>I</strong> = Informed</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECTION 5: AUTOMATION ARCHITECTURE -->
+<!-- ============================================================ -->
+<div class="section" id="automation">
+  <h2>05 &nbsp; Automation Architecture</h2>
+
+  <p style="margin:1rem 0;">Claude AI serves as the always-on operations manager — monitoring inputs, enforcing rules, and triggering actions without human intervention. Below are the seven core automations ranked by priority.</p>
+
+  <h3>5.1 &nbsp; Automation Catalogue</h3>
+
+  <table>
+    <thead>
+      <tr><th style="width:60px;">ID</th><th>Automation</th><th>Trigger</th><th>Action</th><th>Output Channel</th><th>Priority</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>A-01</strong></td>
+        <td>Gmail Lead Detection</td>
+        <td>New email from brand/unknown sender matching inquiry patterns</td>
+        <td>Claude parses email → extracts brand, contact, intent → creates Deal in Notion</td>
+        <td>Notion + Slack notification to BD</td>
+        <td><span class="pill pill-red">P0</span></td>
+      </tr>
+      <tr>
+        <td><strong>A-02</strong></td>
+        <td>Slack Commitment Capture</td>
+        <td>Slack message in BD channels containing deal-related commitments or decisions</td>
+        <td>Claude identifies commitments, deadlines, action items → updates Deal notes in Notion</td>
+        <td>Notion (deal record) + DM to deal owner</td>
+        <td><span class="pill pill-red">P0</span></td>
+      </tr>
+      <tr>
+        <td><strong>A-03</strong></td>
+        <td>SLA Monitor & Escalation</td>
+        <td>Scheduled daily check (all active deals) + real-time on stage entry</td>
+        <td>Calculate days-in-stage vs. SLA limit. Warning at 75%, Alert at 100%, Auto-action at 125%</td>
+        <td>Slack DM to owner (warning) → Slack to BD lead (alert) → Auto stage-move (125%)</td>
+        <td><span class="pill pill-red">P0</span></td>
+      </tr>
+      <tr>
+        <td><strong>A-04</strong></td>
+        <td>Stakeholder Update Broadcaster</td>
+        <td>Stage transition or significant deal update</td>
+        <td>Claude generates contextual summary → notifies relevant stakeholders per RACI matrix</td>
+        <td>Slack channel + Email digest</td>
+        <td><span class="pill pill-red">P0</span></td>
+      </tr>
+      <tr>
+        <td><strong>A-05</strong></td>
+        <td>Revenue Potential Calculator</td>
+        <td>New deal created or brand data updated</td>
+        <td>Claude estimates revenue using brand category, market data, comparable brands</td>
+        <td>Notion (deal record — revenue field)</td>
+        <td><span class="pill pill-orange">P1</span></td>
+      </tr>
+      <tr>
+        <td><strong>A-06</strong></td>
+        <td>Red Flag Detector</td>
+        <td>Deal created or details updated</td>
+        <td>Claude screens against rejection criteria (financials, terms, distributor conflicts, business model)</td>
+        <td>Notion (red flag tags) + Slack alert to BD lead if critical</td>
+        <td><span class="pill pill-orange">P1</span></td>
+      </tr>
+      <tr>
+        <td><strong>A-07</strong></td>
+        <td>Duplicate Detection</td>
+        <td>New deal creation attempt</td>
+        <td>Fuzzy match brand name + contacts against existing deals</td>
+        <td>Warning notification with link to existing deal</td>
+        <td><span class="pill pill-orange">P1</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 style="margin-top:2rem;">5.2 &nbsp; Notification Matrix</h3>
+  <table>
+    <thead>
+      <tr><th>Event</th><th>Recipient(s)</th><th>Channel</th><th>Urgency</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>New lead created</td><td>BD Team</td><td>Slack #bd-pipeline</td><td><span class="pill pill-blue">Info</span></td></tr>
+      <tr><td>Stage advanced</td><td>Deal owner + next-stage owner</td><td>Slack DM + Notion update</td><td><span class="pill pill-blue">Info</span></td></tr>
+      <tr><td>SLA at 75%</td><td>Deal owner</td><td>Slack DM</td><td><span class="pill pill-orange">Warning</span></td></tr>
+      <tr><td>SLA breached (100%)</td><td>Deal owner + BD Lead</td><td>Slack DM + #bd-pipeline</td><td><span class="pill pill-red">Urgent</span></td></tr>
+      <tr><td>Red flag detected</td><td>BD Lead</td><td>Slack DM + Notion tag</td><td><span class="pill pill-red">Urgent</span></td></tr>
+      <tr><td>Deal rejected</td><td>All stakeholders per RACI</td><td>Slack #bd-pipeline + Email</td><td><span class="pill pill-blue">Info</span></td></tr>
+      <tr><td>Deal signed</td><td>All teams</td><td>Slack #wins + Email</td><td><span class="pill pill-green">Celebrate</span></td></tr>
+      <tr><td>On-hold revival due</td><td>Original deal owner</td><td>Slack DM</td><td><span class="pill pill-orange">Action</span></td></tr>
+      <tr><td>Verbal commitment captured</td><td>Deal owner + Brand team</td><td>Slack DM + Notion</td><td><span class="pill pill-blue">Info</span></td></tr>
+      <tr><td>Weekly pipeline digest</td><td>Leadership + BD Team</td><td>Email + Slack #bd-pipeline</td><td><span class="pill pill-blue">Scheduled</span></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECTION 6: IMPLEMENTATION ROADMAP -->
+<!-- ============================================================ -->
+<div class="section" id="roadmap">
+  <h2>06 &nbsp; 1-Week Implementation Roadmap</h2>
+
+  <div class="callout">
+    <strong>Sprint Philosophy:</strong> Ship the 80% that matters. Build the core pipeline + ownership model + top-3 automations in Week 1. Layer on advanced AI features iteratively in Weeks 2-4.
+  </div>
+
+  <div class="timeline">
+    <div class="timeline-item">
+      <div class="timeline-day">Day 1 (Mon) — Foundation</div>
+      <p style="font-size:0.9rem; margin:0.5rem 0;"><strong>Goal:</strong> Notion CRM database schema live and validated.</p>
+      <ul style="font-size:0.85rem; padding-left:1.2rem;">
+        <li>Create Deals database with all fields (stage, owner, SLA dates, revenue, red flags, etc.)</li>
+        <li>Create Brands database with relational link to Deals</li>
+        <li>Create Activity Log database</li>
+        <li>Set up Notion formulas: Days-in-Stage, SLA Status (On Track / Warning / Breached)</li>
+        <li>Build pipeline views: Board view (by stage), Table view (all deals), Filtered views (my deals, SLA warnings)</li>
+      </ul>
+      <p style="font-size:0.8rem; color:var(--opptra-orange); margin-top:0.3rem;">⚠ Risk: Field definitions may need iteration — keep schema flexible.</p>
+    </div>
+
+    <div class="timeline-item">
+      <div class="timeline-day">Day 2 (Tue) — Stage Alignment & Data Migration</div>
+      <p style="font-size:0.9rem; margin:0.5rem 0;"><strong>Goal:</strong> Team aligned on stage definitions; existing data migrated.</p>
+      <ul style="font-size:0.85rem; padding-left:1.2rem;">
+        <li>Workshop with BD + Brand team: review and finalize stage definitions (30-60 min)</li>
+        <li>Finalize SLA durations per stage</li>
+        <li>Assign ownership of all current 100+ deals</li>
+        <li>Migrate data from Google Sheets → Notion (manual import or CSV)</li>
+        <li>Classify existing deals into correct stages</li>
+        <li>Tag rejected/on-hold deals with reason codes</li>
+      </ul>
+      <p style="font-size:0.8rem; color:var(--opptra-orange); margin-top:0.3rem;">⚠ Risk: Data quality from GSheets may require cleanup. Budget 2 extra hours.</p>
+    </div>
+
+    <div class="timeline-item">
+      <div class="timeline-day">Day 3 (Wed) — Ownership Model & Governance</div>
+      <p style="font-size:0.9rem; margin:0.5rem 0;"><strong>Goal:</strong> RACI finalized; governance rules configured in Notion.</p>
+      <ul style="font-size:0.85rem; padding-left:1.2rem;">
+        <li>Finalize RACI matrix with team</li>
+        <li>Configure Notion permissions: BD Admin vs. BD User vs. Brand Team vs. View-only</li>
+        <li>Set up ownership transfer protocol (stage-triggered)</li>
+        <li>Create Notion templates for each stage transition (pre-filled checklists)</li>
+        <li>Document SOP for deal owners: what to update, when, how</li>
+      </ul>
+    </div>
+
+    <div class="timeline-item">
+      <div class="timeline-day">Day 4 (Thu) — Integration Setup</div>
+      <p style="font-size:0.9rem; margin:0.5rem 0;"><strong>Goal:</strong> Gmail and Slack connected to Notion via Claude.</p>
+      <ul style="font-size:0.85rem; padding-left:1.2rem;">
+        <li>Set up Gmail → Notion pipeline (Claude monitors inbox, parses brand emails, creates/updates deals)</li>
+        <li>Set up Slack → Notion pipeline (Claude monitors BD channels, captures commitments)</li>
+        <li>Configure Claude automation rules (lead detection patterns, commitment extraction prompts)</li>
+        <li>Set up outbound notifications: Notion → Slack (stage changes, SLA alerts)</li>
+        <li>Test with 5-10 sample emails and Slack messages</li>
+      </ul>
+      <p style="font-size:0.8rem; color:var(--opptra-orange); margin-top:0.3rem;">⚠ Risk: Integration reliability — build manual override for Day 1 issues.</p>
+    </div>
+
+    <div class="timeline-item">
+      <div class="timeline-day">Day 5 (Fri) — AI Automations</div>
+      <p style="font-size:0.9rem; margin:0.5rem 0;"><strong>Goal:</strong> Core automations live — SLA monitor, notifications, red flag detector.</p>
+      <ul style="font-size:0.85rem; padding-left:1.2rem;">
+        <li>Deploy SLA monitoring automation (daily check + real-time triggers)</li>
+        <li>Deploy stakeholder notification automation (stage transitions)</li>
+        <li>Deploy red flag detection (basic rule set: distributor conflicts, margin thresholds)</li>
+        <li>Deploy duplicate detection</li>
+        <li>Configure revenue potential estimation (basic model for MQL+ deals)</li>
+        <li>End-to-end testing of full workflow: email in → deal created → stage advanced → notification sent</li>
+      </ul>
+    </div>
+
+    <div class="timeline-item">
+      <div class="timeline-day">Day 6 (Sat/Mon) — Training & UAT</div>
+      <p style="font-size:0.9rem; margin:0.5rem 0;"><strong>Goal:</strong> Team trained and confident; bugs caught before go-live.</p>
+      <ul style="font-size:0.85rem; padding-left:1.2rem;">
+        <li>30-minute training session: how to use the CRM, what automations do, what to do manually</li>
+        <li>Each team member walks through 3 deals end-to-end</li>
+        <li>Collect feedback on fields, views, and automation behavior</li>
+        <li>Fix critical issues surfaced during UAT</li>
+        <li>Prepare "cheat sheet" reference card for quick lookups</li>
+      </ul>
+    </div>
+
+    <div class="timeline-item">
+      <div class="timeline-day">Day 7 — Go-Live & Monitoring</div>
+      <p style="font-size:0.9rem; margin:0.5rem 0;"><strong>Goal:</strong> System is live. Team uses it as the primary deal management tool.</p>
+      <ul style="font-size:0.85rem; padding-left:1.2rem;">
+        <li>Official go-live: all deals managed through Notion CRM from today</li>
+        <li>Monitor Claude automation accuracy for first 24 hours</li>
+        <li>Dedicated Slack channel for system issues / feedback</li>
+        <li>Daily check-in for first week post-launch</li>
+        <li>Plan Week 2-4 enhancements based on real usage data</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECTION 7: BUSINESS IMPACT -->
+<!-- ============================================================ -->
+<div class="section" id="impact">
+  <h2>07 &nbsp; Business Impact Analysis</h2>
+
+  <h3>7.1 &nbsp; Before vs. After</h3>
+  <div class="compare-grid">
+    <div class="compare-col compare-before">
+      <h3 style="color:#c62828;">❌ Before (Current State)</h3>
+      <div class="compare-item"><strong>Lead response time:</strong> 2-5 days (manual check)</div>
+      <div class="compare-item"><strong>Stage visibility:</strong> Ask someone in Slack; hope they reply</div>
+      <div class="compare-item"><strong>Deals falling through:</strong> ~15-20% estimated lead leakage</div>
+      <div class="compare-item"><strong>Manual update time:</strong> ~5-8 hours/week across team</div>
+      <div class="compare-item"><strong>Stakeholder alignment:</strong> Ad hoc, after-the-fact</div>
+      <div class="compare-item"><strong>Revenue forecast:</strong> Guesswork in spreadsheets</div>
+      <div class="compare-item"><strong>Deal cycle tracking:</strong> Not tracked</div>
+      <div class="compare-item"><strong>Rejected deal visibility:</strong> Zero — deals just disappear</div>
+      <div class="compare-item"><strong>Commitment tracking:</strong> Verbal only; frequently lost</div>
+      <div class="compare-item"><strong>Onboarding new BD hire:</strong> 3-4 weeks to understand pipeline</div>
+    </div>
+    <div class="compare-col compare-after">
+      <h3 style="color:#2e7d32;">✓ After (BD Command Center)</h3>
+      <div class="compare-item"><strong>Lead response time:</strong> &lt;1 hour (auto-detected from Gmail)</div>
+      <div class="compare-item"><strong>Stage visibility:</strong> Real-time Notion dashboard for all</div>
+      <div class="compare-item"><strong>Deals falling through:</strong> Near-zero (SLA enforcement)</div>
+      <div class="compare-item"><strong>Manual update time:</strong> &lt;30 min/week (automations handle 90%)</div>
+      <div class="compare-item"><strong>Stakeholder alignment:</strong> Auto-notified on every stage change</div>
+      <div class="compare-item"><strong>Revenue forecast:</strong> AI-estimated, stage-weighted pipeline view</div>
+      <div class="compare-item"><strong>Deal cycle tracking:</strong> Every stage transition timestamped with actor</div>
+      <div class="compare-item"><strong>Rejected deal visibility:</strong> Full archive with reason codes + revival pipeline</div>
+      <div class="compare-item"><strong>Commitment tracking:</strong> Auto-captured from Slack and logged in Notion</div>
+      <div class="compare-item"><strong>Onboarding new BD hire:</strong> 1-2 days — system is self-documenting</div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:2rem;">7.2 &nbsp; Quantified Impact Estimate</h3>
+  <table>
+    <thead>
+      <tr><th>Metric</th><th>Current</th><th>Projected</th><th>Improvement</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Lead leakage rate</td><td>~15-20%</td><td>&lt;3%</td><td style="color:#2e7d32; font-weight:600;">80-85% reduction</td></tr>
+      <tr><td>Manual data entry (hrs/week)</td><td>5-8 hrs</td><td>&lt;0.5 hrs</td><td style="color:#2e7d32; font-weight:600;">90%+ reduction</td></tr>
+      <tr><td>Avg. stage transition time</td><td>Unknown</td><td>Tracked with SLAs</td><td style="color:#2e7d32; font-weight:600;">Full visibility</td></tr>
+      <tr><td>Stakeholder update lag</td><td>1-3 days</td><td>Real-time</td><td style="color:#2e7d32; font-weight:600;">Near-instant</td></tr>
+      <tr><td>Pipeline forecast accuracy</td><td>Low (gut feel)</td><td>Medium-High (data-driven)</td><td style="color:#2e7d32; font-weight:600;">Step-change</td></tr>
+      <tr><td>New hire ramp time</td><td>3-4 weeks</td><td>1-2 days</td><td style="color:#2e7d32; font-weight:600;">85-90% faster</td></tr>
+      <tr><td>Effective deal capacity per person</td><td>~25-30 (constrained by admin work)</td><td>~50-60 (admin automated)</td><td style="color:#2e7d32; font-weight:600;">2x throughput</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout" style="margin-top:1.5rem;">
+    <strong>Bottom line:</strong> With 100+ leads and 3 people, this system effectively doubles the team's throughput without adding headcount. If even 5 additional deals convert per quarter due to reduced leakage and faster follow-up, the ROI is multiples of the implementation cost.
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECTION 8: ALTERNATIVES -->
+<!-- ============================================================ -->
+<div class="section" id="alternatives">
+  <h2>08 &nbsp; Alternative Comparison</h2>
+
+  <h3>8.1 &nbsp; Decision Matrix</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Criteria (Weight)</th>
+        <th>Status Quo</th>
+        <th style="background:var(--opptra-orange);">Notion + Claude ★</th>
+        <th>Salesforce</th>
+        <th>HubSpot CRM</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Implementation Cost</strong> (15%)</td>
+        <td><span class="score score-5">5</span> $0</td>
+        <td><span class="score score-4">4</span> ~$50-100/mo</td>
+        <td><span class="score score-1">1</span> $5K-25K+/yr</td>
+        <td><span class="score score-3">3</span> $0-1.8K/yr</td>
+      </tr>
+      <tr>
+        <td><strong>Time to Deploy</strong> (20%)</td>
+        <td><span class="score score-5">5</span> Zero</td>
+        <td><span class="score score-5">5</span> 1 week</td>
+        <td><span class="score score-1">1</span> 2-4 months</td>
+        <td><span class="score score-2">2</span> 4-8 weeks</td>
+      </tr>
+      <tr>
+        <td><strong>Customizability</strong> (15%)</td>
+        <td><span class="score score-1">1</span> N/A</td>
+        <td><span class="score score-5">5</span> Fully flexible</td>
+        <td><span class="score score-4">4</span> Highly configurable</td>
+        <td><span class="score score-3">3</span> Moderate</td>
+      </tr>
+      <tr>
+        <td><strong>AI-Native Automation</strong> (20%)</td>
+        <td><span class="score score-1">1</span> None</td>
+        <td><span class="score score-5">5</span> Claude built-in</td>
+        <td><span class="score score-3">3</span> Einstein (add-on, $$$)</td>
+        <td><span class="score score-2">2</span> Basic workflows</td>
+      </tr>
+      <tr>
+        <td><strong>Team Adoption Risk</strong> (15%)</td>
+        <td><span class="score score-5">5</span> Already there</td>
+        <td><span class="score score-4">4</span> Team knows Notion</td>
+        <td><span class="score score-1">1</span> Steep learning curve</td>
+        <td><span class="score score-3">3</span> Moderate curve</td>
+      </tr>
+      <tr>
+        <td><strong>Scalability</strong> (10%)</td>
+        <td><span class="score score-1">1</span> Breaks now</td>
+        <td><span class="score score-3">3</span> Good to ~500 leads</td>
+        <td><span class="score score-5">5</span> Enterprise scale</td>
+        <td><span class="score score-4">4</span> Good to 1000+</td>
+      </tr>
+      <tr>
+        <td><strong>Ecosystem Fit</strong> (5%)</td>
+        <td><span class="score score-2">2</span> Siloed tools</td>
+        <td><span class="score score-5">5</span> Native to stack</td>
+        <td><span class="score score-2">2</span> New ecosystem</td>
+        <td><span class="score score-3">3</span> Decent integrations</td>
+      </tr>
+      <tr style="background:var(--opptra-yellow);">
+        <td><strong>Weighted Total</strong></td>
+        <td><strong>2.7</strong></td>
+        <td><strong style="color:var(--opptra-orange); font-size:1.1rem;">4.5 ★</strong></td>
+        <td><strong>2.3</strong></td>
+        <td><strong>2.7</strong></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 style="margin-top:2rem;">8.2 &nbsp; Why Notion + Claude Wins</h3>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin:1rem 0;">
+    <div style="padding:1rem; background:var(--opptra-yellow); border-radius:8px;">
+      <h4 style="color:var(--opptra-navy);">vs. Salesforce</h4>
+      <p style="font-size:0.85rem;">Salesforce is the gold standard at scale — but for a 3-person team, it's a sledgehammer for a nail. Implementation takes months, requires a dedicated admin, and the AI features (Einstein) cost extra. Your team would spend more time configuring Salesforce than closing deals. Revisit if team grows to 15+ people.</p>
+    </div>
+    <div style="padding:1rem; background:var(--opptra-yellow); border-radius:8px;">
+      <h4 style="color:var(--opptra-navy);">vs. HubSpot</h4>
+      <p style="font-size:0.85rem;">HubSpot's free tier is compelling but limited in workflow automation. The features you need (custom SLAs, AI parsing, Slack integration) sit behind paid tiers ($800+/mo). More importantly, your team already lives in Notion — adding HubSpot means maintaining two systems. The AI capabilities are a generation behind Claude.</p>
+    </div>
+    <div style="padding:1rem; background:var(--opptra-yellow); border-radius:8px;">
+      <h4 style="color:var(--opptra-navy);">vs. Status Quo</h4>
+      <p style="font-size:0.85rem;">The status quo is actively losing deals and burning team time. With 33+ leads per person and no automation, your team is spending more time on admin than selling. Every week of delay is another set of leads leaking out of the pipeline.</p>
+    </div>
+    <div style="padding:1rem; background:var(--opptra-yellow); border-radius:8px;">
+      <h4 style="color:var(--opptra-navy);">Scale-Up Path</h4>
+      <p style="font-size:0.85rem;">Notion + Claude is not a dead end. If Opptra scales to 500+ leads or 15+ BD reps, you can migrate to Salesforce/HubSpot with clean data and proven processes. Building discipline in Notion first means you'll actually use the enterprise CRM properly later.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECTION 9: RISKS -->
+<!-- ============================================================ -->
+<div class="section" id="risks">
+  <h2>09 &nbsp; Risks & Mitigation</h2>
+
+  <div class="risk-grid">
+    <div class="risk-card" style="border-left-color:#c62828;">
+      <h4 style="display:flex; justify-content:space-between;">
+        <span>R1: Team Adoption Resistance</span>
+        <span><span class="pill pill-orange">Medium Likelihood</span> <span class="pill pill-red">High Impact</span></span>
+      </h4>
+      <p style="font-size:0.85rem; margin:0.5rem 0;">Team members may resist changing habits, especially if the new system feels like more work initially.</p>
+      <p style="font-size:0.85rem;"><strong>Mitigation:</strong> Design the system to reduce work, not add it. Automations must demonstrably save time from Day 1. Run 30-min training; assign "CRM champion" on the team. First-week daily check-ins to resolve friction immediately.</p>
+    </div>
+    <div class="risk-card" style="border-left-color:#e65100;">
+      <h4 style="display:flex; justify-content:space-between;">
+        <span>R2: Data Quality from Migration</span>
+        <span><span class="pill pill-red">High Likelihood</span> <span class="pill pill-orange">Medium Impact</span></span>
+      </h4>
+      <p style="font-size:0.85rem; margin:0.5rem 0;">Existing GSheets data may be incomplete, inconsistent, or outdated. Migrating garbage creates a garbage CRM.</p>
+      <p style="font-size:0.85rem;"><strong>Mitigation:</strong> Day 2 includes a data cleanup pass. Only migrate active deals; archive stale ones. Accept that some deals will need manual re-classification in Week 1.</p>
+    </div>
+    <div class="risk-card" style="border-left-color:#e65100;">
+      <h4 style="display:flex; justify-content:space-between;">
+        <span>R3: Integration Reliability</span>
+        <span><span class="pill pill-orange">Medium Likelihood</span> <span class="pill pill-orange">Medium Impact</span></span>
+      </h4>
+      <p style="font-size:0.85rem; margin:0.5rem 0;">Gmail/Slack → Notion automations may misfire, miss messages, or create incorrect records.</p>
+      <p style="font-size:0.85rem;"><strong>Mitigation:</strong> Build a "human-in-the-loop" model for Week 1: Claude proposes changes, team confirms critical ones. Set confidence thresholds — only auto-create deals above 80% confidence. Daily accuracy review for first 2 weeks.</p>
+    </div>
+    <div class="risk-card" style="border-left-color:#1565c0;">
+      <h4 style="display:flex; justify-content:space-between;">
+        <span>R4: Claude AI Accuracy</span>
+        <span><span class="pill pill-blue">Low Likelihood</span> <span class="pill pill-orange">Medium Impact</span></span>
+      </h4>
+      <p style="font-size:0.85rem; margin:0.5rem 0;">Claude may misclassify emails, miss commitments, or generate incorrect revenue estimates.</p>
+      <p style="font-size:0.85rem;"><strong>Mitigation:</strong> Start with conservative automation — auto-suggest rather than auto-execute for the first 2 weeks. Refine prompts and rules based on actual performance. Revenue estimates should always show as ranges with confidence levels, not single numbers.</p>
+    </div>
+    <div class="risk-card" style="border-left-color:#1565c0;">
+      <h4 style="display:flex; justify-content:space-between;">
+        <span>R5: 1-Week Timeline Pressure</span>
+        <span><span class="pill pill-orange">Medium Likelihood</span> <span class="pill pill-blue">Low Impact</span></span>
+      </h4>
+      <p style="font-size:0.85rem; margin:0.5rem 0;">Ambitious timeline may result in cutting corners or launching with bugs.</p>
+      <p style="font-size:0.85rem;"><strong>Mitigation:</strong> Prioritize ruthlessly. Core CRM + stage definitions + ownership model are non-negotiable for Week 1. AI automations can launch in "suggest mode" first and auto-execute in Week 2-3. Better to ship 80% that works than 100% that doesn't.</p>
+    </div>
+    <div class="risk-card" style="border-left-color:#1565c0;">
+      <h4 style="display:flex; justify-content:space-between;">
+        <span>R6: Over-Automation</span>
+        <span><span class="pill pill-blue">Low Likelihood</span> <span class="pill pill-orange">Medium Impact</span></span>
+      </h4>
+      <p style="font-size:0.85rem; margin:0.5rem 0;">Too many notifications and auto-actions could create noise fatigue, causing team to ignore the system.</p>
+      <p style="font-size:0.85rem;"><strong>Mitigation:</strong> Start with minimal notifications (critical only). Let the team request more rather than opt-out of less. Weekly review of notification volume and relevance.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SECTION 10: NEXT STEPS -->
+<!-- ============================================================ -->
+<div class="section" id="next">
+  <h2>10 &nbsp; Next Steps & Governance</h2>
+
+  <h3>10.1 &nbsp; Immediate Actions (This Week)</h3>
+  <table>
+    <thead>
+      <tr><th style="width:40px;">#</th><th>Action</th><th>Owner</th><th>Due</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>Review and approve this strategy document</td><td>BD Lead / Suphasak</td><td>Day 0</td></tr>
+      <tr><td>2</td><td>Review and validate BRD/PRD (see companion document)</td><td>BD + Brand Team Leads</td><td>Day 0-1</td></tr>
+      <tr><td>3</td><td>Schedule 60-min stage definition alignment workshop</td><td>BD Lead</td><td>Day 1</td></tr>
+      <tr><td>4</td><td>Begin Notion database setup per PRD schema</td><td>CRM Admin (Suphasak/Claude)</td><td>Day 1</td></tr>
+      <tr><td>5</td><td>Export and clean GSheets data for migration</td><td>BD Team</td><td>Day 2</td></tr>
+      <tr><td>6</td><td>Configure Gmail + Slack integrations</td><td>Claude / Tech</td><td>Day 4</td></tr>
+      <tr><td>7</td><td>UAT and team training</td><td>All</td><td>Day 6</td></tr>
+      <tr><td>8</td><td>Go-Live</td><td>All</td><td>Day 7</td></tr>
+    </tbody>
+  </table>
+
+  <h3 style="margin-top:2rem;">10.2 &nbsp; Ongoing Governance Cadence</h3>
+  <table>
+    <thead>
+      <tr><th>Cadence</th><th>Activity</th><th>Participants</th><th>Duration</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Daily</strong> (Week 1-2)</td><td>Quick system health check — review automation accuracy, fix issues</td><td>CRM Admin</td><td>15 min</td></tr>
+      <tr><td><strong>Weekly</strong></td><td>Pipeline review — stage distribution, SLA compliance, top deals, blockers</td><td>BD + Brand Team</td><td>30 min</td></tr>
+      <tr><td><strong>Bi-weekly</strong></td><td>Automation tuning — review Claude accuracy, adjust rules, add new triggers</td><td>CRM Admin</td><td>30 min</td></tr>
+      <tr><td><strong>Monthly</strong></td><td>Pipeline health report to leadership — conversion rates, revenue forecast, SLA trends</td><td>BD Lead → Leadership</td><td>Report (async)</td></tr>
+      <tr><td><strong>Quarterly</strong></td><td>CRM retrospective — what's working, what's not, feature requests, rejected deal review</td><td>All stakeholders</td><td>60 min</td></tr>
+    </tbody>
+  </table>
+
+  <h3 style="margin-top:2rem;">10.3 &nbsp; Success KPIs</h3>
+  <div class="stat-row">
+    <div class="stat-card">
+      <div class="number">&lt;3%</div>
+      <div class="label">Lead leakage rate (from ~15-20%)</div>
+    </div>
+    <div class="stat-card">
+      <div class="number">90%+</div>
+      <div class="label">SLA compliance rate</div>
+    </div>
+    <div class="stat-card">
+      <div class="number">&lt;1hr</div>
+      <div class="label">Avg. new lead capture time</div>
+    </div>
+    <div class="stat-card">
+      <div class="number">100%</div>
+      <div class="label">Stage transition audit trail</div>
+    </div>
+  </div>
+
+  <div class="callout-navy" style="margin-top:2rem;">
+    <strong>Final word:</strong> This is not a technology project — it's an operational transformation. The tools are secondary to the discipline. The BD Command Center succeeds if the team commits to one rule: <em>if it's not in Notion, it didn't happen.</em>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div style="text-align:center; padding:2rem; color:#999; font-size:0.8rem; border-top:1px solid #eee; margin-top:2rem;">
+  <img src="https://cdn.prod.website-files.com/67a44396c211269f785f9dfe/67a4a8650573be9ae072ae9e_Opptra-logo.svg" alt="Opptra" style="height:24px; opacity:0.5; margin-bottom:0.5rem;"><br>
+  Opptra BD Command Center — Strategy & Implementation Plan v1.0<br>
+  Confidential — April 2026
+</div>
+
+</div>
+</body>
+</html>
